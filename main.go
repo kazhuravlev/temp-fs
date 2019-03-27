@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,10 +33,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	//path := flag.Arg(0)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		os.Exit(1)
+	}
+
 	mountpoint := flag.Arg(0)
 
 	f := FileSystem{
+		log:     logger,
 		cache:   &afero.Afero{Fs: afero.NewMemMapFs()},
 		m:       new(sync.RWMutex),
 		path2id: map[string]fuse.NodeID{"/": fuse.RootID},

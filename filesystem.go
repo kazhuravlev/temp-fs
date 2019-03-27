@@ -3,8 +3,8 @@ package main
 import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"fmt"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"os"
 	"sync"
@@ -17,6 +17,7 @@ var (
 )
 
 type FileSystem struct {
+	log   *zap.Logger
 	cache *afero.Afero
 	conn  *fuse.Conn
 	m     *sync.RWMutex
@@ -106,7 +107,7 @@ func (f *FileSystem) Stat(filePath string, attr *fuse.Attr) error {
 }
 
 func (f *FileSystem) Statfs(ctx context.Context, req *fuse.StatfsRequest, resp *fuse.StatfsResponse) error {
-	fmt.Println("Fs.Statfs")
+	f.log.Info("Fs.Statfs")
 
 	resp.Bfree = 1024 * 1024 * 1024
 	resp.Blocks = 1024 * 1024 * 1024
@@ -137,12 +138,12 @@ func (f *FileSystem) run() {
 				}
 
 				f.cache.Remove(path)
-				fmt.Println("[Removed]", path)
+				f.log.Info("[Removed]", zap.String("path", path))
 				return nil
 			})
 
 			if err != nil {
-				fmt.Println("err", err)
+				f.log.Error("Cannot walk", zap.Error(err))
 				continue
 			}
 		}

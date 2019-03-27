@@ -4,13 +4,12 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"context"
-	"fmt"
+	"go.uber.org/zap"
 )
 
 var (
-	_ fs.Node        = &File{}
-	_ fs.NodeOpener  = &File{}
-	_ fs.NodeRenamer = &File{}
+	_ fs.Node       = &File{}
+	_ fs.NodeOpener = &File{}
 )
 
 type File struct {
@@ -19,12 +18,12 @@ type File struct {
 }
 
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	fmt.Println("File.Attr", f.path)
+	f.fs.log.Info("File.Attr", zap.String("path", f.path))
 	return f.fs.Stat(f.path, a)
 }
 
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
-	fmt.Println("File.Open", f.path)
+	f.fs.log.Info("File.Open", zap.String("path", f.path))
 
 	file, err := f.fs.cache.Open(f.path)
 	if err != nil {
@@ -34,9 +33,4 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 	// individual entries inside a zip file are not seekable
 	resp.Flags |= fuse.OpenNonSeekable
 	return &FileHandle{r: file}, nil
-}
-
-func (f *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
-	fmt.Println("File.Rename", req.NewName, req.NewDir)
-	return nil
 }

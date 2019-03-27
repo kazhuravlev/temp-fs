@@ -4,8 +4,8 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"context"
-	"fmt"
 	"github.com/spf13/afero"
+	"go.uber.org/zap"
 	"os"
 	"path"
 )
@@ -27,7 +27,7 @@ type Dir struct {
 }
 
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
-	fmt.Println("Dir.Remove", d.path, req.Name)
+	d.fs.log.Info("Dir.Remove", zap.String("path", d.path), zap.String("name", req.Name))
 
 	filePath := path.Join(d.path, req.Name)
 	if err := d.fs.cache.Remove(filePath); err != nil {
@@ -38,7 +38,7 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 }
 
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
-	fmt.Println("Dir.Attr", d.path)
+	d.fs.log.Info("Dir.Attr", zap.String("path", d.path))
 	return d.fs.Stat(d.path, a)
 }
 
@@ -46,7 +46,7 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 	oldPath := path.Join(d.path, req.OldName)
 	newPath := path.Join(d.path, req.NewName)
 
-	fmt.Println("Dir.Rename", oldPath, newPath)
+	d.fs.log.Info("Dir.Rename", zap.String("old", oldPath), zap.String("new", newPath))
 
 	if err := d.fs.cache.Rename(oldPath, newPath); err != nil {
 		return fuse.ENOENT
@@ -56,7 +56,7 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 }
 
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	fmt.Println("Dir.Create", d.path, req.Name)
+	d.fs.log.Info("Dir.Create", zap.String("path", d.path), zap.String("name", req.Name))
 
 	filePath := path.Join(d.path, req.Name)
 	f, err := d.fs.cache.Create(filePath)
@@ -79,7 +79,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 }
 
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
-	fmt.Println("Dir.MkDir", d.path, req.Name)
+	d.fs.log.Info("Dir.MkDir", zap.String("path", d.path), zap.String("name", req.Name))
 
 	filePath := path.Join(d.path, req.Name)
 	if err := d.fs.cache.MkdirAll(filePath, os.ModeDir|0664); err != nil {
@@ -91,14 +91,13 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 		path: filePath,
 	}
 
-	fmt.Println(req.Node, filePath)
 	d.fs.SetID(filePath)
 
 	return newDir, nil
 }
 
 func (d *Dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
-	fmt.Println("Dir.Lookup", d.path, req.Name)
+	d.fs.log.Info("Dir.Lookup", zap.String("path", d.path), zap.String("name", req.Name))
 
 	filePath := path.Join(d.path, req.Name)
 
@@ -123,7 +122,7 @@ func (d *Dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.Lo
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	fmt.Println("Dir.ReadDirAll", d.path)
+	d.fs.log.Info("Dir.ReadDirAll", zap.String("path", d.path))
 
 	fff, err := d.fs.cache.ReadDir(d.path)
 	if err != nil {
