@@ -3,13 +3,18 @@ package main
 import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	"fmt"
 	"github.com/spf13/afero"
+	"golang.org/x/net/context"
 	"os"
 	"sync"
 	"time"
 )
 
-var _ fs.FS = &FileSystem{}
+var (
+	_ fs.FS         = &FileSystem{}
+	_ fs.FSStatfser = &FileSystem{}
+)
 
 type FileSystem struct {
 	cache *afero.Afero
@@ -94,5 +99,17 @@ func (f *FileSystem) Stat(filePath string, attr *fuse.Attr) error {
 	attr.Mtime = now
 	attr.Ctime = now
 	attr.Crtime = now
+	return nil
+}
+
+func (f *FileSystem) Statfs(ctx context.Context, req *fuse.StatfsRequest, resp *fuse.StatfsResponse) error {
+	fmt.Println("Fs.Statfs")
+
+	resp.Bfree = 1024 * 1024 * 1024
+	resp.Blocks = 1024 * 1024 * 1024
+	resp.Bavail = 1024 * 1024 * 1024
+	resp.Bsize = 1024 * 1024 * 1024
+	resp.Ffree = 1024 * 1024 * 1024
+	resp.Frsize = 3
 	return nil
 }

@@ -18,6 +18,7 @@ var (
 	_ fs.NodeMkdirer         = &Dir{}
 	_ fs.NodeRequestLookuper = &Dir{}
 	_ fs.HandleReadDirAller  = &Dir{}
+	_ fs.NodeRemover         = &Dir{}
 )
 
 type Dir struct {
@@ -25,15 +26,27 @@ type Dir struct {
 	path string
 }
 
+func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
+	fmt.Println("Dir.Remove", d.path, req.Name)
+
+	filePath := path.Join(d.path, req.Name)
+	if err := d.fs.cache.Remove(filePath); err != nil {
+		return fuse.ENOENT
+	}
+
+	return nil
+}
+
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
+	fmt.Println("Dir.Attr", d.path)
 	return d.fs.Stat(d.path, a)
 }
 
 func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
-	fmt.Println("Rename dir", req.NewName, d.path)
-
 	oldPath := path.Join(d.path, req.OldName)
 	newPath := path.Join(d.path, req.NewName)
+
+	fmt.Println("Dir.Rename", oldPath, newPath)
 
 	if err := d.fs.cache.Rename(oldPath, newPath); err != nil {
 		return fuse.ENOENT
@@ -43,7 +56,7 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 }
 
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	fmt.Println("Create request", req.Name, req.Node)
+	fmt.Println("Dir.Create", d.path, req.Name)
 
 	filePath := path.Join(d.path, req.Name)
 	f, err := d.fs.cache.Create(filePath)
@@ -66,6 +79,8 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 }
 
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
+	fmt.Println("Dir.MkDir", d.path, req.Name)
+
 	filePath := path.Join(d.path, req.Name)
 	if err := d.fs.cache.MkdirAll(filePath, os.ModeDir|0664); err != nil {
 		return nil, fuse.ENOENT
@@ -83,6 +98,8 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 }
 
 func (d *Dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.LookupResponse) (fs.Node, error) {
+	fmt.Println("Dir.Lookup", d.path, req.Name)
+
 	filePath := path.Join(d.path, req.Name)
 
 	isDir, err := afero.IsDir(d.fs.cache, filePath)
@@ -106,6 +123,8 @@ func (d *Dir) Lookup(ctx context.Context, req *fuse.LookupRequest, resp *fuse.Lo
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	fmt.Println("Dir.ReadDirAll", d.path)
+
 	fff, err := d.fs.cache.ReadDir(d.path)
 	if err != nil {
 		return nil, fuse.ENOENT
