@@ -161,22 +161,28 @@ var _ fs.Handle = &Dir{}
 var _ fs.NodeRenamer = &Dir{}
 
 func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
-	fmt.Println(req.NewName, req.NewDir, d.path, d.fs.GetByID(req.NewDir))
+	fmt.Println("Rename dir", req.NewName, d.path)
+
+	oldPath := path.Join(d.path, req.OldName)
+	newPath := path.Join(d.path, req.NewName)
+
+	if err := d.fs.cache.Rename(oldPath, newPath); err != nil {
+		return fuse.ENOENT
+	}
+
 	return nil
-	//f.fs.cache.Rename(f.path, req.NewName)
 }
 
 var _ fs.NodeCreater = &Dir{}
 
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	fmt.Println("======================")
+	fmt.Println("Create request", req.Name, req.Node)
+
 	filePath := path.Join(d.path, req.Name)
-	fmt.Println(filePath)
 	f, err := d.fs.cache.Create(filePath)
 	if err != nil {
 		return nil, nil, fuse.ENOENT
 	}
-	fmt.Println(filePath, "!!!!!!!!!!!")
 
 	newFile := &File{
 		fs:   d.fs,
