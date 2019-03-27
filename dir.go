@@ -26,8 +26,7 @@ type Dir struct {
 }
 
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
-
-	return stat(d.fs, d.path, a)
+	return d.fs.Stat(d.path, a)
 }
 
 func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {

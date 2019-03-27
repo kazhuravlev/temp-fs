@@ -19,7 +19,7 @@ type File struct {
 }
 
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	return stat(f.fs, f.path, a)
+	return f.fs.Stat(f.path, a)
 }
 
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {

@@ -4,7 +4,9 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"github.com/spf13/afero"
+	"os"
 	"sync"
+	"time"
 )
 
 var _ fs.FS = &FileSystem{}
@@ -73,4 +75,24 @@ func (f *FileSystem) Mount(path string) error {
 
 func (f *FileSystem) Close() error {
 	return f.conn.Close()
+}
+
+func (f *FileSystem) Stat(filePath string, attr *fuse.Attr) error {
+	stat, err := f.cache.Stat(filePath)
+	if err != nil {
+		return fuse.ENOENT
+	}
+
+	if stat.IsDir() {
+		attr.Mode = os.ModeDir | 0664
+	} else {
+		attr.Mode = 0664
+	}
+
+	now := time.Now()
+	attr.Size = uint64(stat.Size())
+	attr.Mtime = now
+	attr.Ctime = now
+	attr.Crtime = now
+	return nil
 }

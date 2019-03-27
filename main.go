@@ -2,7 +2,6 @@ package main
 
 import (
 	"bazil.org/fuse"
-	"bazil.org/fuse/fs"
 	"flag"
 	"fmt"
 	"github.com/spf13/afero"
@@ -10,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 )
 
 // We assume the zip file contains entries for directories too.
@@ -51,24 +49,4 @@ func main() {
 	if err := f.Mount(mountpoint); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func stat(fs *FileSystem, fPath string, a *fuse.Attr) error {
-	stat, err := fs.cache.Stat(fPath)
-	if err != nil {
-		return fuse.ENOENT
-	}
-
-	if stat.IsDir() {
-		a.Mode = os.ModeDir | 0664
-	} else {
-		a.Mode = 0664
-	}
-
-	now := time.Now()
-	a.Size = uint64(stat.Size())
-	a.Mtime = now
-	a.Ctime = now
-	a.Crtime = now
-	return nil
 }
