@@ -100,13 +100,13 @@ func main() {
 
 	flag.Usage = usage
 	flag.Parse()
-	if flag.NArg() != 2 {
+	if flag.NArg() != 1 {
 		usage()
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	//path := flag.Arg(0)
-	mountpoint := flag.Arg(1)
+	mountpoint := flag.Arg(0)
 
 	f := FileSystem{
 		cache:   &afero.Afero{Fs: afero.NewMemMapFs()},
