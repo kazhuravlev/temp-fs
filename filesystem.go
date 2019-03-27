@@ -66,6 +66,8 @@ func (f *FileSystem) Mount(path string) error {
 	}
 	defer c.Close()
 
+	go f.run()
+
 	if err := fs.Serve(c, f); err != nil {
 		return err
 	}
@@ -75,6 +77,7 @@ func (f *FileSystem) Mount(path string) error {
 	if err := c.MountError; err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -112,4 +115,36 @@ func (f *FileSystem) Statfs(ctx context.Context, req *fuse.StatfsRequest, resp *
 	resp.Ffree = 1024 * 1024 * 1024
 	resp.Frsize = 3
 	return nil
+}
+
+func (f *FileSystem) run() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	timeout := 10 * time.Second
+
+	for {
+		select {
+		case now := <-ticker.C:
+			err := f.cache.Walk("/", func(path string, info os.FileInfo, err error) error {
+				if info.IsDir() {
+					return nil
+				}
+
+				isOld := now.Sub(info.ModTime()) >= timeout
+				if !isOld {
+					return nil
+				}
+
+				f.cache.Remove(path)
+				fmt.Println("[Removed]", path)
+				return nil
+			})
+
+			if err != nil {
+				fmt.Println("err", err)
+				continue
+			}
+		}
+	}
 }
